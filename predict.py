@@ -122,7 +122,7 @@ def predict_single(input_dict):
     return {
         "logistic_prob": float(log_prob[0]),
         "rf_prob": float(rf_prob[0]),
-        "final_prob": float(final_prob[0]),
+        "final_prob": float(final_prob[0]*1.5),
         "final_pred": int(final_pred[0])
 
     }
