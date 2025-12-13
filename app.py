@@ -3,14 +3,15 @@ import pandas as pd
 import numpy as np
 from predict import predict_single
 
+if "run_prediction" not in st.session_state:
+    st.session_state.run_prediction = False
+
 st.set_page_config(page_title="ICU Early Deterioration Detector", layout="wide")
 
 st.title("ICU Early Warning System (1-Hour Deterioration Prediction)")
 st.write("Enter patient vitals and lab values to predict clinical deterioration risk.")
 
-# -------------------------------------
-# INPUT FORM
-# -------------------------------------
+
 with st.form("icu_form"):
 
     st.subheader("Patient Vitals & Labs")
@@ -61,16 +62,16 @@ with st.form("icu_form"):
             ["emergency", "normal", "urgent", "elective", "other"]
         )
 
-    submitted = st.form_submit_button("Predict")
+    submitted = st.form_submit_button(
+        "Predict",
+        on_click=lambda: st.session_state.update({"run_prediction": True})
+    )
 
 # -------------------------------------
-# PREDICTION RESULT
+# PREDICTION BLOCK (FIXED)
 # -------------------------------------
-if submitted:
+if st.session_state.run_prediction:
 
-    # -------------------------------------------
-    # RAW INPUTS EXACTLY IN TRAINING SEQUENCE
-    # -------------------------------------------
     input_dict = {
         "heart_rate": heart_rate,
         "spo2_pct": spo2_pct,
@@ -95,22 +96,37 @@ if submitted:
         "admission_type": admission_type
     }
 
-    # -------------------------------------------
-    # CALL MODEL
-    # -------------------------------------------
     result = predict_single(input_dict)
 
-    # -------------------------------------------
-    # DISPLAY RESULTS
-    # -------------------------------------------
     st.subheader("Prediction Summary")
 
+    prob = result["final_prob"]
 
-    st.write(f"Logistic Probability: **{result['logistic_prob']:.3f}**")
-    st.write(f"Random Forest Probability: **{result['rf_prob']:.3f}**")
-    st.write(f"Final Ensemble Probability: **{result['final_prob']:.3f}**")
-
+    # -------------------------------
+    # MAIN FINAL PREDICTION ALERT
+    # -------------------------------
     if result["final_pred"] == 1:
         st.error("HIGH RISK: Patient may deteriorate in the next 1 hour.")
-    else:
-        st.success("LOW RISK: Patient stable for the next 1 hour.")
+        if(prob)<=50:
+            st.subheader("suggestion bases on level of risk")
+            st.warning("patient will be in high critical condition")
+        elif(prob)<80:
+            st.subheader("suggestion bases on level of risk")
+            st.warning("very high risk even worsen condition in next 1h")
+
+
+    elif result["final_pred"] == 0:
+        st.success("patient vitals not showing any critical condition in next 1h ")
+        if(prob)<=10:
+            st.subheader("suggestion bases on level of risk")
+            st.warning("patient is in normal state")
+
+        elif(prob)<24:
+            st.subheader("suggestion bases on level of risk")
+            st.warning("border line condtion maybe light deterioration")
+
+        
+
+
+
+    st.session_state.run_prediction = False
