@@ -23,7 +23,6 @@ df["deterioration_next_1h"] = (
     (df["deterioration_hour"] - df["hour_from_admission"]).between(0,1)
 ).astype(int)
 
-#print((df["deterioration_next_1h"]==1).sum())
 #removing the deterioration_hour column bcz our work done from generating target column so removing this column is necessary due to model not cheats
 df=df.drop(columns=["deterioration_hour"])
 print("this is the columns that we need to wnat as input before feature engineering ",df.drop(columns=["deterioration_next_1h"]).columns)
@@ -47,18 +46,18 @@ df["MAP"] = (df["systolic_bp"] + 2 * df["diastolic_bp"]) / 3
 df["pulse_pressure"] = df["systolic_bp"] - df["diastolic_bp"]
 df["shock_index"] = df["heart_rate"] / df["systolic_bp"]
 df["spo2_gap"] = 100 - df["spo2_pct"]
-    # --------------------------
+    
     # 4. LAB ENGINEERED FEATURES
-    # --------------------------
+
 df["inflammation_index"] = df["wbc_count"] * df["crp_level"]
 df["organ_stress"] = df["lactate"] + df["creatinine"]
 df["anemia_flag"] = (df["hemoglobin"] < 12).astype(int)
 df["kidney_risk"] = (df["creatinine"] > 1.2).astype(int)
 df["high_lactate_flag"] = (df["lactate"] > 2).astype(int)
 
-    # --------------------------
+
     # 5. OXYGEN THERAPY FEATURES
-    # --------------------------
+ 
     # Map device strings to numeric scale
 device_map = {
         "none": 0,
@@ -75,20 +74,19 @@ df["oxygen_device_encoded"] = df["oxygen_device_encoded"].fillna(0)
 
 df["oxygen_need_score"] = df["oxygen_flow"].fillna(0) * df["oxygen_device_encoded"]
 
-    # --------------------------
     # 6. DEMOGRAPHIC FEATURES
-    # --------------------------
+
 df["gender_encoded"] = df["gender"].replace({"M": 1, "F": 0}).fillna(0)
 df["age_bucket"] = pd.cut(df["age"], bins=[0, 30, 50, 70, 120], labels=[0,1,2,3]).astype(float)
 
-    # --------------------------
+
     # 7. ADMISSION FEATURES
-    # --------------------------
+
 df["admission_type_encoded"] = df["admission_type"].astype("category").cat.codes
 
-    # --------------------------
+
     # 8. STABILITY INDEX
-    # --------------------------
+  
 df["early_stability_score"] = (
         df["MAP"].fillna(0) +
         df["spo2_pct"].fillna(0) +
