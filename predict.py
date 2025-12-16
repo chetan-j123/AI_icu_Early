@@ -2,20 +2,16 @@ import numpy as np
 import pandas as pd
 import joblib
 
-# ----------------------------------------
 # LOAD SAVED MODELS + SCALER + FEATURE LIST
-# ----------------------------------------
+
 logreg = joblib.load("logistic_model.pkl")
 rf = joblib.load("random_forest_model.pkl")
 scaler = joblib.load("scaler.pkl")
 feature_cols = joblib.load("feature_columns.pkl")   # list of feature names IN ORDER
 
-# ----------------------------------------
 # CUSTOM SOFT-VOTING ENSEMBLE
-# ----------------------------------------
+
 def ensemble_predict(log_prob, rf_prob ,threshold=0.260):
-    #final_prob = 0.2*log_prob + 0.6*rf_prob + 0.2*gb_prob
-    #final_prob = 0.2*log_prob + 0.5*rf_prob + 0.3*gb_prob
     final_prob=0.25*log_prob+0.75*rf_prob
     final_pred = (final_prob >= threshold).astype(int)
     return final_prob, final_pred
@@ -34,9 +30,9 @@ def predict_single(input_dict):
     df = pd.DataFrame([input_dict])
     print("feature generation se phle  featues",df.columns)
     
-    # ----------------------------------------
+
     # RECREATE ALL FEATURE ENGINEERING
-    # ----------------------------------------
+ 
 
     # MAP + Pulse Pressure + Shock Index
     df["MAP"] = (df["systolic_bp"] + 2 * df["diastolic_bp"]) / 3
@@ -70,8 +66,7 @@ def predict_single(input_dict):
     df["age_bucket"] = pd.cut(df["age"], bins=[0, 30, 50, 70, 120],
                               labels=[0, 1, 2, 3]).astype(float)
 
-    # ADMISSION TYPE
-    #df["admission_type_encoded"] = df["admission_type"].astype("category").cat.codes
+    # ADMISSION TYPE    
     admission_map = joblib.load("admission_map.pkl")
     df["admission_type_encoded"] = df["admission_type"].map(admission_map).fillna(0)
 
@@ -86,35 +81,29 @@ def predict_single(input_dict):
     # FINAL: remove unused columns
     df = df.drop(columns=["oxygen_device", "gender", "admission_type"], errors="ignore")
    
-    # ----------------------------------------
+ 
     # ENSURE CORRECT FEATURE ORDER
-    # ----------------------------------------
+ 
     df = df.reindex(columns=feature_cols)
     print("feature generation se bad features  featues yani model ko dene k liye features",df.columns)
 
-    # ----------------------------------------
     # HANDLE INF/NaN EXACTLY LIKE TRAINING
-    # ----------------------------------------
+
     df = df.replace([np.inf, -np.inf], np.nan).fillna(0)
 
-    # ----------------------------------------
-    # SCALE FEATURES
-    # ----------------------------------------
-    #print("Prediction features count:", df.shape[1])
-    #print(df.columns)
 
     X_scaled = scaler.transform(df.values)
  
-    # ----------------------------------------
+    
     # GET INDIVIDUAL MODEL PROBABILITIES
-    # ----------------------------------------
+
     log_prob = logreg.predict_proba(X_scaled)[:, 1]
     rf_prob = rf.predict_proba(X_scaled)[:, 1]
     
 
-    # ----------------------------------------
+
     # CUSTOM ENSEMBLE
-    # ----------------------------------------
+
     final_prob, final_pred = ensemble_predict(log_prob, rf_prob)
 
     print("feture sequence in predict = ",df.columns)
@@ -128,9 +117,9 @@ def predict_single(input_dict):
     }
 
    
-# ----------------------------------------
+
 # EXAMPLE USAGE
-# ----------------------------------------
+
 if __name__ == "__main__":
 
  examples = {
